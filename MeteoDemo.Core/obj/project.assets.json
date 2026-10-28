@@ -184,19 +184,6 @@
         "runtime": {
           "bin/placeholder/MeteoDemo.Database.dll": {}
         }
-      },
-      "MeteoDemo.Logic/1.0.0": {
-        "type": "project",
-        "framework": ".NETCoreApp,Version=v10.0",
-        "dependencies": {
-          "MeteoDemo.Database": "1.0.0"
-        },
-        "compile": {
-          "bin/placeholder/MeteoDemo.Logic.dll": {}
-        },
-        "runtime": {
-          "bin/placeholder/MeteoDemo.Logic.dll": {}
-        }
       }
     }
   },
@@ -330,16 +317,11 @@
       "type": "project",
       "path": "../MeteoDemo.Database/MeteoDemo.Database.csproj",
       "msbuildProject": "../MeteoDemo.Database/MeteoDemo.Database.csproj"
-    },
-    "MeteoDemo.Logic/1.0.0": {
-      "type": "project",
-      "path": "../MeteoDemo.Logic/MeteoDemo.Logic.csproj",
-      "msbuildProject": "../MeteoDemo.Logic/MeteoDemo.Logic.csproj"
     }
   },
   "projectFileDependencyGroups": {
     "net10.0": [
-      "MeteoDemo.Logic >= 1.0.0"
+      "MeteoDemo.Database >= 1.0.0"
     ]
   },
   "packageFolders": {
@@ -348,11 +330,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\momoz\\RiderProjects\\MeteoDemo\\MeteoDemo\\MeteoDemo.csproj",
-      "projectName": "MeteoDemo",
-      "projectPath": "C:\\Users\\momoz\\RiderProjects\\MeteoDemo\\MeteoDemo\\MeteoDemo.csproj",
+      "projectUniqueName": "C:\\Users\\momoz\\RiderProjects\\MeteoDemo\\MeteoDemo.Core\\MeteoDemo.Core.csproj",
+      "projectName": "MeteoDemo.Core",
+      "projectPath": "C:\\Users\\momoz\\RiderProjects\\MeteoDemo\\MeteoDemo.Core\\MeteoDemo.Core.csproj",
       "packagesPath": "C:\\Users\\momoz\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\momoz\\RiderProjects\\MeteoDemo\\MeteoDemo\\obj\\",
+      "outputPath": "C:\\Users\\momoz\\RiderProjects\\MeteoDemo\\MeteoDemo.Core\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\momoz\\AppData\\Roaming\\NuGet\\NuGet.Config"
@@ -367,8 +349,8 @@
         "net10.0": {
           "targetAlias": "net10.0",
           "projectReferences": {
-            "C:\\Users\\momoz\\RiderProjects\\MeteoDemo\\MeteoDemo.Logic\\MeteoDemo.Logic.csproj": {
-              "projectPath": "C:\\Users\\momoz\\RiderProjects\\MeteoDemo\\MeteoDemo.Logic\\MeteoDemo.Logic.csproj"
+            "C:\\Users\\momoz\\RiderProjects\\MeteoDemo\\MeteoDemo.Database\\MeteoDemo.Database.csproj": {
+              "projectPath": "C:\\Users\\momoz\\RiderProjects\\MeteoDemo\\MeteoDemo.Database\\MeteoDemo.Database.csproj"
             }
           }
         }
