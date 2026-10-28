@@ -12,8 +12,8 @@ x86/
 [Ll]ogs/
 
 # .NET
-bin/
-obj/
+**/bin/
+**/obj/
 *.user
 *.suo
 *.cache
@@ -44,4 +44,3 @@ artifacts/
 *.db
 *.db-shm
 *.db-wal
-
