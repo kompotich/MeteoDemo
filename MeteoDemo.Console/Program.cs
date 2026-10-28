@@ -13,7 +13,14 @@ services.AddScoped<WeatherConsole>();
 
 await using var serviceProvider = services.BuildServiceProvider();
 await using var scope = serviceProvider.CreateAsyncScope();
+
+var openMeteoClient = scope.ServiceProvider.GetRequiredService<OpenMeteoClient>();
 var weatherConsole = scope.ServiceProvider.GetRequiredService<WeatherConsole>();
-await weatherConsole.DisplayCurrentWeatherAsync();
-await weatherConsole.DisplayHourlyWeatherAsync();
-await weatherConsole.DisplayDailyWeatherAsync();
+
+var currentWeather = await openMeteoClient.GetCurrentWeatherAsync();
+var hourlyWeather = await openMeteoClient.GetHourlyWeatherAsync();
+var dailyWeather = await openMeteoClient.GetDailyWeatherAsync();
+
+weatherConsole.DisplayCurrentWeather(currentWeather);
+weatherConsole.DisplayHourlyWeather(hourlyWeather);
+weatherConsole.DisplayDailyWeather(dailyWeather);

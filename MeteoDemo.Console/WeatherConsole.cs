@@ -1,13 +1,11 @@
 using System.Globalization;
 using SystemConsole = System.Console;
-using MeteoDemo.Core;
 using MeteoDemo.Core.Models;
 
 namespace MeteoDemo.Console;
 
-/// <summary>Получает и выводит прогноз Open-Meteo на русском языке.</summary>
-/// <param name="openMeteoClient">Клиент для запроса прогноза.</param>
-internal sealed class WeatherConsole(OpenMeteoClient openMeteoClient)
+/// <summary>Выводит готовые данные прогноза Open-Meteo на русском языке.</summary>
+internal sealed class WeatherConsole
 {
     private static readonly CultureInfo RussianCulture = CultureInfo.GetCultureInfo("ru-RU");
 
@@ -89,12 +87,10 @@ internal sealed class WeatherConsole(OpenMeteoClient openMeteoClient)
     private static readonly string[] WindDirections =
         ["север", "северо-северо-восток", "северо-восток", "востоко-северо-восток", "восток", "востоко-юго-восток", "юго-восток", "юго-юго-восток", "юг", "юго-юго-запад", "юго-запад", "западо-юго-запад", "запад", "западо-северо-запад", "северо-запад", "северо-северо-запад"];
 
-    /// <summary>Запрашивает и выводит текущие погодные условия.</summary>
-    /// <param name="cancellationToken">Токен отмены запроса и вывода данных.</param>
-    /// <returns>Асинхронная операция получения и отображения текущей погоды.</returns>
-    public async Task DisplayCurrentWeatherAsync(CancellationToken cancellationToken = default)
+    /// <summary>Выводит полученные текущие погодные условия.</summary>
+    /// <param name="response">Ответ Open-Meteo с текущими показателями.</param>
+    public void DisplayCurrentWeather(OpenMeteoResponse response)
     {
-        var response = await openMeteoClient.GetCurrentWeatherAsync(cancellationToken);
         WriteHeader("ТЕКУЩИЕ ПОКАЗАТЕЛИ", response);
 
         if (response.Current is not null)
@@ -108,12 +104,10 @@ internal sealed class WeatherConsole(OpenMeteoClient openMeteoClient)
         }
     }
 
-    /// <summary>Запрашивает и выводит почасовой прогноз.</summary>
-    /// <param name="cancellationToken">Токен отмены запроса и вывода данных.</param>
-    /// <returns>Асинхронная операция получения и отображения почасового прогноза.</returns>
-    public async Task DisplayHourlyWeatherAsync(CancellationToken cancellationToken = default)
+    /// <summary>Выводит полученный почасовой прогноз.</summary>
+    /// <param name="response">Ответ Open-Meteo с почасовыми показателями.</param>
+    public void DisplayHourlyWeather(OpenMeteoResponse response)
     {
-        var response = await openMeteoClient.GetHourlyWeatherAsync(cancellationToken);
         WriteHeader("ПОЧАСОВЫЙ ПРОГНОЗ", response);
 
         if (response.Hourly is not null)
@@ -127,12 +121,10 @@ internal sealed class WeatherConsole(OpenMeteoClient openMeteoClient)
         }
     }
 
-    /// <summary>Запрашивает и выводит суточную сводку.</summary>
-    /// <param name="cancellationToken">Токен отмены запроса и вывода данных.</param>
-    /// <returns>Асинхронная операция получения и отображения суточного прогноза.</returns>
-    public async Task DisplayDailyWeatherAsync(CancellationToken cancellationToken = default)
+    /// <summary>Выводит полученную суточную сводку.</summary>
+    /// <param name="response">Ответ Open-Meteo с суточными показателями.</param>
+    public void DisplayDailyWeather(OpenMeteoResponse response)
     {
-        var response = await openMeteoClient.GetDailyWeatherAsync(cancellationToken);
         WriteHeader("ДНЕВНАЯ СВОДКА", response);
 
         if (response.Daily is not null)

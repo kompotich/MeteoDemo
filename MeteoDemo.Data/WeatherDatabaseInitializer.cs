@@ -4,6 +4,7 @@ namespace MeteoDemo.Data;
 
 /// <summary>Создаёт схему SQLite при запуске приложения, если база ещё не создана.</summary>
 /// <param name="dbContext">Контекст базы данных приложения.</param>
+/// <remarks>EnsureCreated не обновляет схему уже существующей базы данных при изменении модели.</remarks>
 public sealed class WeatherDatabaseInitializer(WeatherDbContext dbContext)
 {
     /// <summary>Инициализирует базу данных на основе текущей модели EF Core.</summary>

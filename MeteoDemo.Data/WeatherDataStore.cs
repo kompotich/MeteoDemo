@@ -1,62 +1,126 @@
 using MeteoDemo.Core.Models;
 using MeteoDemo.Data.Entities;
-using Microsoft.EntityFrameworkCore;
 
 namespace MeteoDemo.Data;
 
-/// <summary>Сохраняет ответы Open-Meteo и связанные с ними измерения в SQLite.</summary>
-/// <param name="dbContext">Контекст EF Core для записи снимка и измерений.</param>
+/// <summary>Сохраняет отдельно полученные ответы Open-Meteo в соответствующих таблицах SQLite.</summary>
+/// <param name="dbContext">Контекст EF Core для записи снимков прогноза.</param>
 public sealed class WeatherDataStore(WeatherDbContext dbContext)
 {
-    /// <summary>Сохраняет один ответ API вместе со всеми его текущими, почасовыми и суточными показателями.</summary>
-    /// <param name="response">Преобразованный ответ Open-Meteo.</param>
+    /// <summary>Сохраняет только текущие погодные показатели и метаданные их ответа.</summary>
+    /// <param name="response">Ответ Open-Meteo с заполненным разделом current.</param>
     /// <param name="cancellationToken">Токен отмены записи.</param>
-    /// <returns>Идентификатор созданного снимка прогноза.</returns>
-    /// <exception cref="InvalidOperationException">Количество значений показателя не совпадает с количеством временных меток.</exception>
-    public async Task<long> SaveAsync(OpenMeteoResponse response, CancellationToken cancellationToken = default)
+    /// <returns>Идентификатор сохранённого снимка текущей погоды.</returns>
+    /// <exception cref="ArgumentNullException">Ответ равен null.</exception>
+    /// <exception cref="InvalidOperationException">Ответ не содержит current.</exception>
+    public async Task<long> SaveCurrentAsync(
+        OpenMeteoResponse response,
+        CancellationToken cancellationToken = default)
     {
-        var snapshot = new WeatherSnapshot
+        ArgumentNullException.ThrowIfNull(response);
+        if (response.Current is not { } current)
         {
-            FetchedAtUtc = DateTime.UtcNow,
-            Latitude = response.Latitude,
-            Longitude = response.Longitude,
-            Elevation = response.Elevation,
-            GenerationTimeMilliseconds = response.GenerationTimeMilliseconds,
-            UtcOffsetSeconds = response.UtcOffsetSeconds,
-            Timezone = response.Timezone,
-            TimezoneAbbreviation = response.TimezoneAbbreviation,
-            CurrentIntervalSeconds = response.Current?.IntervalSeconds,
-            HourlyIntervalSeconds = response.Hourly?.IntervalSeconds
+            throw new InvalidOperationException("The Open-Meteo response does not contain current weather data.");
+        }
+
+        var snapshot = new CurrentWeatherSnapshot
+        {
+            Metadata = CreateMetadata(response),
+            IntervalSeconds = current.IntervalSeconds
         };
 
-        AddCurrentMeasurements(snapshot, response.Current, response.CurrentUnits);
-        AddArrayMeasurements(snapshot, "hourly", response.Hourly?.Time, response.Hourly?.Values, response.HourlyUnits);
-        AddDailyMeasurements(snapshot, response.Daily, response.DailyUnits);
+        AddCurrentMeasurements(snapshot, current, response.CurrentUnits);
 
-        dbContext.WeatherSnapshots.Add(snapshot);
+        dbContext.CurrentWeatherSnapshots.Add(snapshot);
         await dbContext.SaveChangesAsync(cancellationToken);
         return snapshot.Id;
     }
 
-    /// <summary>Добавляет к снимку значения текущих показателей.</summary>
-    /// <param name="snapshot">Снимок, которому принадлежат измерения.</param>
-    /// <param name="current">Текущие значения API или null, если раздел отсутствует.</param>
-    /// <param name="units">Единицы измерения текущих значений.</param>
-    private static void AddCurrentMeasurements(
-        WeatherSnapshot snapshot,
-        CurrentWeatherData? current,
-        WeatherUnits? units)
+    /// <summary>Сохраняет только почасовые показатели и метаданные их ответа.</summary>
+    /// <param name="response">Ответ Open-Meteo с заполненным разделом hourly.</param>
+    /// <param name="cancellationToken">Токен отмены записи.</param>
+    /// <returns>Идентификатор сохранённого снимка почасового прогноза.</returns>
+    /// <exception cref="ArgumentNullException">Ответ равен null.</exception>
+    /// <exception cref="InvalidOperationException">Ответ не содержит hourly или длины временных рядов не совпадают.</exception>
+    public async Task<long> SaveHourlyAsync(
+        OpenMeteoResponse response,
+        CancellationToken cancellationToken = default)
     {
-        if (current is null)
+        ArgumentNullException.ThrowIfNull(response);
+        if (response.Hourly is not { } hourly)
         {
-            return;
+            throw new InvalidOperationException("The Open-Meteo response does not contain hourly weather data.");
         }
 
+        var snapshot = new HourlyWeatherSnapshot
+        {
+            Metadata = CreateMetadata(response),
+            IntervalSeconds = hourly.IntervalSeconds
+        };
+
+        AddHourlyMeasurements(snapshot, hourly, response.HourlyUnits);
+
+        dbContext.HourlyWeatherSnapshots.Add(snapshot);
+        await dbContext.SaveChangesAsync(cancellationToken);
+        return snapshot.Id;
+    }
+
+    /// <summary>Сохраняет только суточные показатели и метаданные их ответа.</summary>
+    /// <param name="response">Ответ Open-Meteo с заполненным разделом daily.</param>
+    /// <param name="cancellationToken">Токен отмены записи.</param>
+    /// <returns>Идентификатор сохранённого снимка суточного прогноза.</returns>
+    /// <exception cref="ArgumentNullException">Ответ равен null.</exception>
+    /// <exception cref="InvalidOperationException">Ответ не содержит daily или длины временных рядов не совпадают.</exception>
+    public async Task<long> SaveDailyAsync(
+        OpenMeteoResponse response,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(response);
+        if (response.Daily is not { } daily)
+        {
+            throw new InvalidOperationException("The Open-Meteo response does not contain daily weather data.");
+        }
+
+        var snapshot = new DailyWeatherSnapshot
+        {
+            Metadata = CreateMetadata(response)
+        };
+
+        AddDailyMeasurements(snapshot, daily, response.DailyUnits);
+
+        dbContext.DailyWeatherSnapshots.Add(snapshot);
+        await dbContext.SaveChangesAsync(cancellationToken);
+        return snapshot.Id;
+    }
+
+    /// <summary>Создаёт метаданные отдельного ответа API.</summary>
+    /// <param name="response">Ответ Open-Meteo.</param>
+    /// <returns>Метаданные снимка с временем получения и координатами ответа.</returns>
+    private static WeatherSnapshotMetadata CreateMetadata(OpenMeteoResponse response) => new()
+    {
+        FetchedAtUtc = DateTime.UtcNow,
+        Latitude = response.Latitude,
+        Longitude = response.Longitude,
+        Elevation = response.Elevation,
+        GenerationTimeMilliseconds = response.GenerationTimeMilliseconds,
+        UtcOffsetSeconds = response.UtcOffsetSeconds,
+        Timezone = response.Timezone,
+        TimezoneAbbreviation = response.TimezoneAbbreviation
+    };
+
+    /// <summary>Добавляет текущие показатели в снимок.</summary>
+    /// <param name="snapshot">Снимок текущей погоды.</param>
+    /// <param name="current">Текущие показатели из ответа API.</param>
+    /// <param name="units">Единицы измерения текущих показателей.</param>
+    private static void AddCurrentMeasurements(
+        CurrentWeatherSnapshot snapshot,
+        CurrentWeatherData current,
+        WeatherUnits? units)
+    {
         foreach (var (variableName, value) in current.Values)
         {
-            snapshot.Measurements.Add(new WeatherMeasurement
+            snapshot.Measurements.Add(new CurrentWeatherMeasurement
             {
-                Section = "current",
                 VariableName = variableName,
                 Timestamp = current.Time,
                 NumericValue = value,
@@ -65,40 +129,25 @@ public sealed class WeatherDataStore(WeatherDbContext dbContext)
         }
     }
 
-    /// <summary>Добавляет в снимок измерения из временного ряда.</summary>
-    /// <param name="snapshot">Снимок, которому принадлежат измерения.</param>
-    /// <param name="section">Название раздела ответа API.</param>
-    /// <param name="timestamps">Временные метки значений или null, если раздел отсутствует.</param>
-    /// <param name="values">Массивы значений, индексированные именами переменных.</param>
-    /// <param name="units">Единицы измерения показателей.</param>
-    /// <exception cref="InvalidOperationException">Для показателя больше значений, чем временных меток.</exception>
-    private static void AddArrayMeasurements(
-        WeatherSnapshot snapshot,
-        string section,
-        IReadOnlyList<string>? timestamps,
-        IReadOnlyDictionary<string, double?[]>? values,
+    /// <summary>Добавляет почасовые показатели в снимок с проверкой количества временных меток.</summary>
+    /// <param name="snapshot">Снимок почасового прогноза.</param>
+    /// <param name="hourly">Почасовые значения из ответа API.</param>
+    /// <param name="units">Единицы измерения почасовых показателей.</param>
+    private static void AddHourlyMeasurements(
+        HourlyWeatherSnapshot snapshot,
+        HourlyWeatherData hourly,
         WeatherUnits? units)
     {
-        if (timestamps is null || values is null)
+        foreach (var (variableName, measurements) in hourly.Values)
         {
-            return;
-        }
+            EnsureMatchingLengths("hourly", variableName, hourly.Time.Length, measurements.Length);
 
-        foreach (var (variableName, measurements) in values)
-        {
             for (var index = 0; index < measurements.Length; index++)
             {
-                if (index >= timestamps.Count)
+                snapshot.Measurements.Add(new HourlyWeatherMeasurement
                 {
-                    throw new InvalidOperationException(
-                        $"The {section} metric '{variableName}' has more values than timestamps.");
-                }
-
-                snapshot.Measurements.Add(new WeatherMeasurement
-                {
-                    Section = section,
                     VariableName = variableName,
-                    Timestamp = timestamps[index],
+                    Timestamp = hourly.Time[index],
                     NumericValue = measurements[index],
                     Unit = GetUnit(units, variableName)
                 });
@@ -106,36 +155,68 @@ public sealed class WeatherDataStore(WeatherDbContext dbContext)
         }
     }
 
-    /// <summary>Добавляет числовые суточные показатели, время восхода и время заката.</summary>
-    /// <param name="snapshot">Снимок, которому принадлежат измерения.</param>
-    /// <param name="daily">Суточные данные API или null, если раздел отсутствует.</param>
+    /// <summary>Добавляет суточные числовые показатели в сущности измерений.</summary>
+    /// <param name="measurements">Коллекция для добавления суточных измерений.</param>
+    /// <param name="timestamps">Даты суточного прогноза.</param>
+    /// <param name="values">Массивы значений показателей.</param>
     /// <param name="units">Единицы измерения суточных показателей.</param>
-    private static void AddDailyMeasurements(
-        WeatherSnapshot snapshot,
-        DailyWeatherData? daily,
+    private static void AddNumericMeasurements(
+        ICollection<DailyWeatherMeasurement> measurements,
+        IReadOnlyList<string> timestamps,
+        IReadOnlyDictionary<string, double?[]> values,
         WeatherUnits? units)
     {
-        if (daily is null)
+        foreach (var (variableName, items) in values)
         {
-            return;
-        }
+            EnsureMatchingLengths("daily", variableName, timestamps.Count, items.Length);
 
-        AddArrayMeasurements(snapshot, "daily", daily.Time, daily.Values, units);
-        AddTextMeasurements(snapshot, "sunrise", daily.Time, daily.Sunrise, GetUnit(units, "sunrise"));
-        AddTextMeasurements(snapshot, "sunset", daily.Time, daily.Sunset, GetUnit(units, "sunset"));
+            for (var index = 0; index < items.Length; index++)
+            {
+                measurements.Add(new DailyWeatherMeasurement
+                {
+                    VariableName = variableName,
+                    Timestamp = timestamps[index],
+                    NumericValue = items[index],
+                    Unit = GetUnit(units, variableName)
+                });
+            }
+        }
     }
 
-    /// <summary>Добавляет в снимок временной ряд текстовых значений.</summary>
-    /// <param name="snapshot">Снимок, которому принадлежат измерения.</param>
+    /// <summary>Добавляет числовые и текстовые суточные показатели в снимок.</summary>
+    /// <param name="snapshot">Снимок суточного прогноза.</param>
+    /// <param name="daily">Суточные показатели из ответа API.</param>
+    /// <param name="units">Единицы измерения суточных показателей.</param>
+    private static void AddDailyMeasurements(
+        DailyWeatherSnapshot snapshot,
+        DailyWeatherData daily,
+        WeatherUnits? units)
+    {
+        AddNumericMeasurements(snapshot.Measurements, daily.Time, daily.Values, units);
+        AddTextMeasurements(
+            snapshot.Measurements,
+            daily.Time,
+            "sunrise",
+            daily.Sunrise,
+            GetUnit(units, "sunrise"));
+        AddTextMeasurements(
+            snapshot.Measurements,
+            daily.Time,
+            "sunset",
+            daily.Sunset,
+            GetUnit(units, "sunset"));
+    }
+
+    /// <summary>Добавляет текстовые суточные показатели, например время восхода и заката.</summary>
+    /// <param name="measurements">Коллекция для добавления суточных измерений.</param>
+    /// <param name="timestamps">Даты суточного прогноза.</param>
     /// <param name="variableName">Имя текстового показателя.</param>
-    /// <param name="timestamps">Даты или временные метки показателя.</param>
-    /// <param name="values">Текстовые значения или null, если показатель не запрошен.</param>
-    /// <param name="unit">Единица измерения, если она задана API.</param>
-    /// <exception cref="InvalidOperationException">Для показателя больше значений, чем временных меток.</exception>
+    /// <param name="values">Значения показателя или null, если он не был запрошен.</param>
+    /// <param name="unit">Единица измерения, если она указана API.</param>
     private static void AddTextMeasurements(
-        WeatherSnapshot snapshot,
-        string variableName,
+        ICollection<DailyWeatherMeasurement> measurements,
         IReadOnlyList<string> timestamps,
+        string variableName,
         IReadOnlyList<string>? values,
         string? unit)
     {
@@ -144,22 +225,36 @@ public sealed class WeatherDataStore(WeatherDbContext dbContext)
             return;
         }
 
+        EnsureMatchingLengths("daily", variableName, timestamps.Count, values.Count);
+
         for (var index = 0; index < values.Count; index++)
         {
-            if (index >= timestamps.Count)
+            measurements.Add(new DailyWeatherMeasurement
             {
-                throw new InvalidOperationException(
-                    $"The daily metric '{variableName}' has more values than timestamps.");
-            }
-
-            snapshot.Measurements.Add(new WeatherMeasurement
-            {
-                Section = "daily",
                 VariableName = variableName,
                 Timestamp = timestamps[index],
                 TextValue = values[index],
                 Unit = unit
             });
+        }
+    }
+
+    /// <summary>Проверяет соответствие числа значений числу временных меток.</summary>
+    /// <param name="section">Название раздела ответа API.</param>
+    /// <param name="variableName">Имя переменной с несовпадающей длиной.</param>
+    /// <param name="timestampCount">Число временных меток.</param>
+    /// <param name="valueCount">Число значений переменной.</param>
+    /// <exception cref="InvalidOperationException">Количество значений не совпадает с количеством временных меток.</exception>
+    private static void EnsureMatchingLengths(
+        string section,
+        string variableName,
+        int timestampCount,
+        int valueCount)
+    {
+        if (timestampCount != valueCount)
+        {
+            throw new InvalidOperationException(
+                $"The {section} metric '{variableName}' has {valueCount} values but {timestampCount} timestamps.");
         }
     }
 

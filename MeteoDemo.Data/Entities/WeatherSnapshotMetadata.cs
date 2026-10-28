@@ -1,11 +1,8 @@
 namespace MeteoDemo.Data.Entities;
 
-/// <summary>Сохранённый снимок одного ответа прогноза и его метеорологические измерения.</summary>
-public sealed class WeatherSnapshot
+/// <summary>Общие метаданные одного ответа Open-Meteo.</summary>
+public sealed class WeatherSnapshotMetadata
 {
-    /// <summary>Первичный ключ снимка.</summary>
-    public long Id { get; set; }
-
     /// <summary>Момент получения ответа, сохранённый в UTC.</summary>
     public DateTime FetchedAtUtc { get; set; }
 
@@ -29,13 +26,4 @@ public sealed class WeatherSnapshot
 
     /// <summary>Сокращённое обозначение часового пояса.</summary>
     public string TimezoneAbbreviation { get; set; } = "";
-
-    /// <summary>Длительность шага текущих измерений в секундах, если предоставлена API.</summary>
-    public int? CurrentIntervalSeconds { get; set; }
-
-    /// <summary>Длительность шага почасового прогноза в секундах, если предоставлена API.</summary>
-    public int? HourlyIntervalSeconds { get; set; }
-
-    /// <summary>Все текущие, почасовые и суточные измерения этого снимка.</summary>
-    public ICollection<WeatherMeasurement> Measurements { get; set; } = new List<WeatherMeasurement>();
 }
