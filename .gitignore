@@ -28,6 +28,7 @@ artifacts/
 
 # JetBrains Rider
 .idea/
+**/.idea/
 *.sln.iml
 
 # Test results
