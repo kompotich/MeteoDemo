@@ -4,7 +4,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MeteoDemo.Console", "MeteoD
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MeteoDemo.Core", "MeteoDemo.Core\MeteoDemo.Core.csproj", "{A012EE47-81F2-4298-9CFB-C51D2E1CF2E1}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MeteoDemo.Database", "MeteoDemo.Database\MeteoDemo.Database.csproj", "{B123FF58-92A3-43A9-AD0C-D62E3F2D03F2}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MeteoDemo.Data", "MeteoDemo.Data\MeteoDemo.Data.csproj", "{B123FF58-92A3-43A9-AD0C-D62E3F2D03F2}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

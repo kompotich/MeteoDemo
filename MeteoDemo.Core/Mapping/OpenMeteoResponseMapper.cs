@@ -6,6 +6,10 @@ namespace MeteoDemo.Core.Mapping;
 /// <summary>Преобразует JSON-ответ Open-Meteo в типизированные DTO приложения.</summary>
 public static class OpenMeteoResponseMapper
 {
+    /// <summary>Преобразует JSON-объект API в модель ответа приложения.</summary>
+    /// <param name="source">Корневой JSON-объект ответа Open-Meteo.</param>
+    /// <returns>Типизированный ответ с метаданными, текущими, почасовыми и дневными данными.</returns>
+    /// <exception cref="JsonException">Ответ имеет неожиданный тип или содержит некорректное поле.</exception>
     public static OpenMeteoResponse Map(JsonElement source)
     {
         if (source.ValueKind != JsonValueKind.Object)
@@ -31,6 +35,10 @@ public static class OpenMeteoResponseMapper
         };
     }
 
+    /// <summary>Преобразует объект единиц измерения соответствующего раздела.</summary>
+    /// <param name="source">JSON-объект ответа API.</param>
+    /// <param name="propertyName">Имя поля с единицами измерения.</param>
+    /// <returns>Сопоставление имени показателя с единицей или null, если поле отсутствует.</returns>
     private static WeatherUnits? MapUnits(JsonElement source, string propertyName)
     {
         if (!source.TryGetProperty(propertyName, out var unitsElement) ||
@@ -49,6 +57,10 @@ public static class OpenMeteoResponseMapper
         return units;
     }
 
+    /// <summary>Преобразует блок текущих погодных показателей.</summary>
+    /// <param name="source">JSON-объект ответа API.</param>
+    /// <param name="propertyName">Имя поля с текущими данными.</param>
+    /// <returns>Текущие показатели или null, если блок отсутствует.</returns>
     private static CurrentWeatherData? MapCurrent(JsonElement source, string propertyName)
     {
         if (!source.TryGetProperty(propertyName, out var dataElement) ||
@@ -76,6 +88,10 @@ public static class OpenMeteoResponseMapper
         return data;
     }
 
+    /// <summary>Преобразует блок почасовых значений в массивы показателей.</summary>
+    /// <param name="source">JSON-объект ответа API.</param>
+    /// <param name="propertyName">Имя поля с почасовыми данными.</param>
+    /// <returns>Почасовой прогноз или null, если блок отсутствует.</returns>
     private static HourlyWeatherData? MapHourly(JsonElement source, string propertyName)
     {
         if (!source.TryGetProperty(propertyName, out var dataElement) ||
@@ -103,6 +119,10 @@ public static class OpenMeteoResponseMapper
         return data;
     }
 
+    /// <summary>Преобразует блок суточных значений и времён восхода и заката.</summary>
+    /// <param name="source">JSON-объект ответа API.</param>
+    /// <param name="propertyName">Имя поля с суточными данными.</param>
+    /// <returns>Суточная сводка или null, если блок отсутствует.</returns>
     private static DailyWeatherData? MapDaily(JsonElement source, string propertyName)
     {
         if (!source.TryGetProperty(propertyName, out var dataElement) ||
@@ -131,6 +151,10 @@ public static class OpenMeteoResponseMapper
         return data;
     }
 
+    /// <summary>Читает обязательное числовое поле типа double.</summary>
+    /// <param name="source">JSON-объект, содержащий поле.</param>
+    /// <param name="propertyName">Имя числового поля.</param>
+    /// <returns>Прочитанное число.</returns>
     private static double ReadDouble(JsonElement source, string propertyName)
     {
         if (!source.TryGetProperty(propertyName, out var value) ||
@@ -143,6 +167,10 @@ public static class OpenMeteoResponseMapper
         return number;
     }
 
+    /// <summary>Читает обязательное целочисленное поле.</summary>
+    /// <param name="source">JSON-объект, содержащий поле.</param>
+    /// <param name="propertyName">Имя целочисленного поля.</param>
+    /// <returns>Прочитанное целое число.</returns>
     private static int ReadInt32(JsonElement source, string propertyName)
     {
         if (!source.TryGetProperty(propertyName, out var value) ||
@@ -155,6 +183,10 @@ public static class OpenMeteoResponseMapper
         return number;
     }
 
+    /// <summary>Читает необязательное целочисленное поле.</summary>
+    /// <param name="source">JSON-объект, содержащий поле.</param>
+    /// <param name="propertyName">Имя целочисленного поля.</param>
+    /// <returns>Целое число либо null, если поле отсутствует или равно null.</returns>
     private static int? ReadOptionalInt32(JsonElement source, string propertyName)
     {
         if (!source.TryGetProperty(propertyName, out var value) || value.ValueKind == JsonValueKind.Null)
@@ -170,6 +202,10 @@ public static class OpenMeteoResponseMapper
         return number;
     }
 
+    /// <summary>Читает обязательное строковое поле.</summary>
+    /// <param name="source">JSON-объект, содержащий поле.</param>
+    /// <param name="propertyName">Имя строкового поля.</param>
+    /// <returns>Значение поля.</returns>
     private static string ReadString(JsonElement source, string propertyName)
     {
         if (!source.TryGetProperty(propertyName, out var value) ||
@@ -181,6 +217,10 @@ public static class OpenMeteoResponseMapper
         return value.GetString()!;
     }
 
+    /// <summary>Читает обязательный массив строк.</summary>
+    /// <param name="source">JSON-объект, содержащий массив.</param>
+    /// <param name="propertyName">Имя поля-массива.</param>
+    /// <returns>Массив строковых значений.</returns>
     private static string[] ReadStringArray(JsonElement source, string propertyName)
     {
         if (!source.TryGetProperty(propertyName, out var value) ||
@@ -196,6 +236,10 @@ public static class OpenMeteoResponseMapper
             .ToArray();
     }
 
+    /// <summary>Читает необязательный массив строк.</summary>
+    /// <param name="source">JSON-объект, содержащий массив.</param>
+    /// <param name="propertyName">Имя поля-массива.</param>
+    /// <returns>Массив строк или null, если поле отсутствует или равно null.</returns>
     private static string[]? ReadOptionalStringArray(JsonElement source, string propertyName)
     {
         if (!source.TryGetProperty(propertyName, out var value) || value.ValueKind == JsonValueKind.Null)
@@ -206,6 +250,10 @@ public static class OpenMeteoResponseMapper
         return ReadStringArray(source, propertyName);
     }
 
+    /// <summary>Читает массив чисел, допускающий null для отдельных значений.</summary>
+    /// <param name="source">JSON-массив показателей.</param>
+    /// <param name="propertyName">Имя показателя для сообщения об ошибке.</param>
+    /// <returns>Массив чисел и null-значений.</returns>
     private static double?[] ReadNullableDoubleArray(JsonElement source, string propertyName)
     {
         if (source.ValueKind != JsonValueKind.Array)
@@ -216,6 +264,10 @@ public static class OpenMeteoResponseMapper
         return source.EnumerateArray().Select(value => ReadNullableDouble(value, propertyName)).ToArray();
     }
 
+    /// <summary>Читает число или null из значения JSON.</summary>
+    /// <param name="source">JSON-значение показателя.</param>
+    /// <param name="propertyName">Имя показателя для сообщения об ошибке.</param>
+    /// <returns>Числовое значение либо null.</returns>
     private static double? ReadNullableDouble(JsonElement source, string propertyName) =>
         source.ValueKind switch
         {

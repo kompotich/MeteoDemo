@@ -7,8 +7,4 @@
     <RootNamespace>MeteoDemo.Core</RootNamespace>
   </PropertyGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\MeteoDemo.Database\MeteoDemo.Database.csproj" />
-  </ItemGroup>
-
 </Project>

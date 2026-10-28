@@ -1,10 +1,14 @@
 using System.Globalization;
 using MeteoDemo.Core;
 using MeteoDemo.Core.Models;
+using MeteoDemo.Data;
 
 namespace MeteoDemo.Console;
 
-internal sealed class WeatherConsole(OpenMeteoClient openMeteoClient)
+/// <summary>Выводит прогноз Open-Meteo на русском языке и сохраняет ответ в базе данных.</summary>
+/// <param name="openMeteoClient">Клиент для запроса прогноза.</param>
+/// <param name="weatherDataStore">Хранилище для сохранения полученного снимка.</param>
+internal sealed class WeatherConsole(OpenMeteoClient openMeteoClient, WeatherDataStore weatherDataStore)
 {
     private static readonly CultureInfo RussianCulture = CultureInfo.GetCultureInfo("ru-RU");
 
@@ -86,11 +90,16 @@ internal sealed class WeatherConsole(OpenMeteoClient openMeteoClient)
     private static readonly string[] WindDirections =
         ["север", "северо-северо-восток", "северо-восток", "востоко-северо-восток", "восток", "востоко-юго-восток", "юго-восток", "юго-юго-восток", "юг", "юго-юго-запад", "юго-запад", "западо-юго-запад", "запад", "западо-северо-запад", "северо-запад", "северо-северо-запад"];
 
+    /// <summary>Получает прогноз, сохраняет его и выводит метаданные и показатели в консоль.</summary>
+    /// <param name="cancellationToken">Токен отмены запроса, сохранения и вывода прогноза.</param>
+    /// <returns>Асинхронная операция получения и отображения прогноза.</returns>
     public async Task DisplayWeatherAsync(CancellationToken cancellationToken = default)
     {
         var weather = await openMeteoClient.GetWeatherAsync(cancellationToken);
+        var snapshotId = await weatherDataStore.SaveAsync(weather, cancellationToken);
 
         global::System.Console.WriteLine("ПРОГНОЗ ПОГОДЫ OPEN-METEO");
+        global::System.Console.WriteLine($"Снимок прогноза сохранён в SQLite (ID: {snapshotId}).");
         global::System.Console.WriteLine("Пояснения показателей: https://open-meteo.com/en/docs");
         global::System.Console.WriteLine($"Координаты: {weather.Latitude:F4}, {weather.Longitude:F4}; высота: {weather.Elevation} м");
         global::System.Console.WriteLine($"Часовой пояс: {weather.Timezone} ({weather.TimezoneAbbreviation}), смещение UTC: {weather.UtcOffsetSeconds} с");
@@ -119,6 +128,12 @@ internal sealed class WeatherConsole(OpenMeteoClient openMeteoClient)
         }
     }
 
+    /// <summary>Выводит один раздел прогноза с описаниями переменных, единицами и временными метками.</summary>
+    /// <param name="title">Заголовок раздела.</param>
+    /// <param name="timestamps">Временные метки измерений.</param>
+    /// <param name="values">Значения показателей, индексированные именами переменных API.</param>
+    /// <param name="units">Единицы измерения показателей.</param>
+    /// <param name="intervalSeconds">Длительность шага данных в секундах, если она задана.</param>
     private static void DisplaySection(
         string title,
         IReadOnlyList<string> timestamps,
@@ -154,6 +169,12 @@ internal sealed class WeatherConsole(OpenMeteoClient openMeteoClient)
         }
     }
 
+    /// <summary>Выводит текстовый временной ряд, например время восхода или заката солнца.</summary>
+    /// <param name="title">Название ряда для консольного вывода.</param>
+    /// <param name="key">Имя соответствующей переменной в данных о единицах измерения.</param>
+    /// <param name="timestamps">Даты или временные метки значений.</param>
+    /// <param name="values">Текстовые значения; null означает, что показатель не запрошен.</param>
+    /// <param name="units">Единицы измерения раздела.</param>
     private static void DisplayTextSeries(
         string title,
         string key,
@@ -178,6 +199,10 @@ internal sealed class WeatherConsole(OpenMeteoClient openMeteoClient)
         }
     }
 
+    /// <summary>Форматирует число с учётом специальных кодов погоды и направления ветра.</summary>
+    /// <param name="key">Имя показателя Open-Meteo.</param>
+    /// <param name="value">Числовое значение показателя или null.</param>
+    /// <returns>Строковое представление значения для консольного вывода.</returns>
     private static string FormatMeasurement(string key, double? value)
     {
         if (value is null)
@@ -206,8 +231,14 @@ internal sealed class WeatherConsole(OpenMeteoClient openMeteoClient)
         return FormatNumber(value.Value);
     }
 
+    /// <summary>Форматирует число с использованием русской культуры.</summary>
+    /// <param name="value">Числовое значение.</param>
+    /// <returns>Строковое представление числа.</returns>
     private static string FormatNumber(double value) => value.ToString("G", RussianCulture);
 
+    /// <summary>Возвращает русское описание кода погоды Всемирной метеорологической организации.</summary>
+    /// <param name="code">Числовой код погодных условий WMO.</param>
+    /// <returns>Краткое описание погодных условий.</returns>
     private static string DescribeWeatherCode(int code) => code switch
     {
         0 => "ясно",

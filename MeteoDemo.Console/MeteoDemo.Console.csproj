@@ -17,6 +17,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\MeteoDemo.Core\MeteoDemo.Core.csproj" />
+      <ProjectReference Include="..\MeteoDemo.Data\MeteoDemo.Data.csproj" />
     </ItemGroup>
 
     <ItemGroup>

@@ -4,11 +4,12 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <RootNamespace>MeteoDemo.Database</RootNamespace>
+    <RootNamespace>MeteoDemo.Data</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.0" />
+    <ProjectReference Include="..\MeteoDemo.Core\MeteoDemo.Core.csproj" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.0" />
   </ItemGroup>
 
 </Project>
