@@ -1,14 +1,13 @@
 using System.Globalization;
+using SystemConsole = System.Console;
 using MeteoDemo.Core;
 using MeteoDemo.Core.Models;
-using MeteoDemo.Data;
 
 namespace MeteoDemo.Console;
 
-/// <summary>Выводит прогноз Open-Meteo на русском языке и сохраняет ответ в базе данных.</summary>
+/// <summary>Получает и выводит прогноз Open-Meteo на русском языке.</summary>
 /// <param name="openMeteoClient">Клиент для запроса прогноза.</param>
-/// <param name="weatherDataStore">Хранилище для сохранения полученного снимка.</param>
-internal sealed class WeatherConsole(OpenMeteoClient openMeteoClient, WeatherDataStore weatherDataStore)
+internal sealed class WeatherConsole(OpenMeteoClient openMeteoClient)
 {
     private static readonly CultureInfo RussianCulture = CultureInfo.GetCultureInfo("ru-RU");
 
@@ -90,42 +89,71 @@ internal sealed class WeatherConsole(OpenMeteoClient openMeteoClient, WeatherDat
     private static readonly string[] WindDirections =
         ["север", "северо-северо-восток", "северо-восток", "востоко-северо-восток", "восток", "востоко-юго-восток", "юго-восток", "юго-юго-восток", "юг", "юго-юго-запад", "юго-запад", "западо-юго-запад", "запад", "западо-северо-запад", "северо-запад", "северо-северо-запад"];
 
-    /// <summary>Получает прогноз, сохраняет его и выводит метаданные и показатели в консоль.</summary>
-    /// <param name="cancellationToken">Токен отмены запроса, сохранения и вывода прогноза.</param>
-    /// <returns>Асинхронная операция получения и отображения прогноза.</returns>
-    public async Task DisplayWeatherAsync(CancellationToken cancellationToken = default)
+    /// <summary>Запрашивает и выводит текущие погодные условия.</summary>
+    /// <param name="cancellationToken">Токен отмены запроса и вывода данных.</param>
+    /// <returns>Асинхронная операция получения и отображения текущей погоды.</returns>
+    public async Task DisplayCurrentWeatherAsync(CancellationToken cancellationToken = default)
     {
-        var weather = await openMeteoClient.GetWeatherAsync(cancellationToken);
-        var snapshotId = await weatherDataStore.SaveAsync(weather, cancellationToken);
+        var response = await openMeteoClient.GetCurrentWeatherAsync(cancellationToken);
+        WriteHeader("ТЕКУЩИЕ ПОКАЗАТЕЛИ", response);
 
-        global::System.Console.WriteLine("ПРОГНОЗ ПОГОДЫ OPEN-METEO");
-        global::System.Console.WriteLine($"Снимок прогноза сохранён в SQLite (ID: {snapshotId}).");
-        global::System.Console.WriteLine("Пояснения показателей: https://open-meteo.com/en/docs");
-        global::System.Console.WriteLine($"Координаты: {weather.Latitude:F4}, {weather.Longitude:F4}; высота: {weather.Elevation} м");
-        global::System.Console.WriteLine($"Часовой пояс: {weather.Timezone} ({weather.TimezoneAbbreviation}), смещение UTC: {weather.UtcOffsetSeconds} с");
-        global::System.Console.WriteLine($"Время формирования ответа: {weather.GenerationTimeMilliseconds.ToString("0.##", RussianCulture)} мс");
-
-        if (weather.Current is not null)
+        if (response.Current is not null)
         {
             DisplaySection(
                 "ТЕКУЩИЕ ПОКАЗАТЕЛИ",
-                [weather.Current.Time],
-                weather.Current.Values.ToDictionary(pair => pair.Key, pair => new double?[] { pair.Value }),
-                weather.CurrentUnits,
-                weather.Current.IntervalSeconds);
+                [response.Current.Time],
+                response.Current.Values.ToDictionary(pair => pair.Key, pair => new double?[] { pair.Value }),
+                response.CurrentUnits,
+                response.Current.IntervalSeconds);
         }
+    }
 
-        if (weather.Hourly is not null)
-        {
-            DisplaySection("ПОЧАСОВЫЕ ДАННЫЕ", weather.Hourly.Time, weather.Hourly.Values, weather.HourlyUnits, weather.Hourly.IntervalSeconds);
-        }
+    /// <summary>Запрашивает и выводит почасовой прогноз.</summary>
+    /// <param name="cancellationToken">Токен отмены запроса и вывода данных.</param>
+    /// <returns>Асинхронная операция получения и отображения почасового прогноза.</returns>
+    public async Task DisplayHourlyWeatherAsync(CancellationToken cancellationToken = default)
+    {
+        var response = await openMeteoClient.GetHourlyWeatherAsync(cancellationToken);
+        WriteHeader("ПОЧАСОВЫЙ ПРОГНОЗ", response);
 
-        if (weather.Daily is not null)
+        if (response.Hourly is not null)
         {
-            DisplaySection("ДНЕВНАЯ СВОДКА", weather.Daily.Time, weather.Daily.Values, weather.DailyUnits);
-            DisplayTextSeries("Восход солнца", "sunrise", weather.Daily.Time, weather.Daily.Sunrise, weather.DailyUnits);
-            DisplayTextSeries("Закат солнца", "sunset", weather.Daily.Time, weather.Daily.Sunset, weather.DailyUnits);
+            DisplaySection(
+                "ПОЧАСОВЫЕ ДАННЫЕ",
+                response.Hourly.Time,
+                response.Hourly.Values,
+                response.HourlyUnits,
+                response.Hourly.IntervalSeconds);
         }
+    }
+
+    /// <summary>Запрашивает и выводит суточную сводку.</summary>
+    /// <param name="cancellationToken">Токен отмены запроса и вывода данных.</param>
+    /// <returns>Асинхронная операция получения и отображения суточного прогноза.</returns>
+    public async Task DisplayDailyWeatherAsync(CancellationToken cancellationToken = default)
+    {
+        var response = await openMeteoClient.GetDailyWeatherAsync(cancellationToken);
+        WriteHeader("ДНЕВНАЯ СВОДКА", response);
+
+        if (response.Daily is not null)
+        {
+            DisplaySection("ДНЕВНАЯ СВОДКА", response.Daily.Time, response.Daily.Values, response.DailyUnits);
+            DisplayTextSeries("Восход солнца", "sunrise", response.Daily.Time, response.Daily.Sunrise, response.DailyUnits);
+            DisplayTextSeries("Закат солнца", "sunset", response.Daily.Time, response.Daily.Sunset, response.DailyUnits);
+        }
+    }
+
+    /// <summary>Выводит общие метаданные ответа и ссылку на документацию показателей.</summary>
+    /// <param name="title">Заголовок выводимой секции.</param>
+    /// <param name="response">Ответ Open-Meteo с координатами и часовым поясом.</param>
+    private static void WriteHeader(string title, OpenMeteoResponse response)
+    {
+        SystemConsole.WriteLine();
+        SystemConsole.WriteLine($"=== {title} ===");
+        SystemConsole.WriteLine("Пояснения показателей: https://open-meteo.com/en/docs");
+        SystemConsole.WriteLine($"Координаты: {response.Latitude:F4}, {response.Longitude:F4}; высота: {response.Elevation} м");
+        SystemConsole.WriteLine($"Часовой пояс: {response.Timezone} ({response.TimezoneAbbreviation}), смещение UTC: {response.UtcOffsetSeconds} с");
+        SystemConsole.WriteLine($"Время формирования ответа: {response.GenerationTimeMilliseconds.ToString("0.##", RussianCulture)} мс");
     }
 
     /// <summary>Выводит один раздел прогноза с описаниями переменных, единицами и временными метками.</summary>
@@ -141,11 +169,11 @@ internal sealed class WeatherConsole(OpenMeteoClient openMeteoClient, WeatherDat
         WeatherUnits? units,
         int? intervalSeconds = null)
     {
-        global::System.Console.WriteLine();
-        global::System.Console.WriteLine($"=== {title} ===");
+        SystemConsole.WriteLine();
+        SystemConsole.WriteLine($"--- {title} ---");
         if (intervalSeconds is > 0)
         {
-            global::System.Console.WriteLine($"Интервал измерений: {intervalSeconds} с");
+            SystemConsole.WriteLine($"Интервал измерений: {intervalSeconds} с");
         }
 
         foreach (var (key, measurements) in values)
@@ -157,14 +185,14 @@ internal sealed class WeatherConsole(OpenMeteoClient openMeteoClient, WeatherDat
                 ? knownUnit
                 : "единица не указана";
 
-            global::System.Console.WriteLine();
-            global::System.Console.WriteLine($"{descriptor.Name} [{unit}]");
-            global::System.Console.WriteLine($"  {descriptor.Description}");
+            SystemConsole.WriteLine();
+            SystemConsole.WriteLine($"{descriptor.Name} [{unit}]");
+            SystemConsole.WriteLine($"  {descriptor.Description}");
 
             for (var index = 0; index < measurements.Length; index++)
             {
                 var timestamp = index < timestamps.Count ? timestamps[index] : $"запись {index + 1}";
-                global::System.Console.WriteLine($"  {timestamp}: {FormatMeasurement(key, measurements[index])}");
+                SystemConsole.WriteLine($"  {timestamp}: {FormatMeasurement(key, measurements[index])}");
             }
         }
     }
@@ -190,12 +218,12 @@ internal sealed class WeatherConsole(OpenMeteoClient openMeteoClient, WeatherDat
         var unit = units is not null && units.Values.TryGetValue(key, out var knownUnit)
             ? knownUnit
             : "единица не указана";
-        global::System.Console.WriteLine();
-        global::System.Console.WriteLine($"{title} [{unit}]");
+        SystemConsole.WriteLine();
+        SystemConsole.WriteLine($"{title} [{unit}]");
         for (var index = 0; index < values.Length; index++)
         {
             var timestamp = index < timestamps.Count ? timestamps[index] : $"запись {index + 1}";
-            global::System.Console.WriteLine($"  {timestamp}: {values[index]}");
+            SystemConsole.WriteLine($"  {timestamp}: {values[index]}");
         }
     }
 

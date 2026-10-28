@@ -3,7 +3,8 @@
     "BaseUrl": "https://api.open-meteo.com/v1/forecast",
     "Latitude": 55.7558,
     "Longitude": 37.6173,
-    "Current": [
+    "Current": {
+      "Variables": [
       "temperature_2m",
       "relative_humidity_2m",
       "dew_point_2m",
@@ -53,8 +54,10 @@
       "soil_moisture_3_to_9cm",
       "soil_moisture_9_to_27cm",
       "soil_moisture_27_to_81cm"
-    ],
-    "Hourly": [
+      ]
+    },
+    "Hourly": {
+      "Variables": [
       "temperature_2m",
       "relative_humidity_2m",
       "dew_point_2m",
@@ -105,8 +108,12 @@
       "soil_moisture_3_to_9cm",
       "soil_moisture_9_to_27cm",
       "soil_moisture_27_to_81cm"
-    ],
-    "Daily": [
+      ],
+      "ForecastDays": 3,
+      "PastDays": 1
+    },
+    "Daily": {
+      "Variables": [
       "weather_code",
       "temperature_2m_max",
       "temperature_2m_min",
@@ -129,17 +136,15 @@
       "wind_direction_10m_dominant",
       "shortwave_radiation_sum",
       "et0_fao_evapotranspiration"
-    ],
-    "ForecastDays": 3,
-    "PastDays": 1,
+      ],
+      "ForecastDays": 3,
+      "PastDays": 1
+    },
     "Timezone": "auto",
     "TemperatureUnit": "celsius",
     "WindSpeedUnit": "kmh",
     "PrecipitationUnit": "mm",
     "Tilt": 45,
     "Azimuth": 0
-  },
-  "Database": {
-    "ConnectionString": "Data Source=weather.db"
   }
 }

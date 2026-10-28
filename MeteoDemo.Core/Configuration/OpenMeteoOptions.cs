@@ -12,20 +12,14 @@ public sealed class OpenMeteoOptions
     /// <summary>Долгота точки прогноза в градусах.</summary>
     public double Longitude { get; init; }
 
-    /// <summary>Список переменных для блока текущих погодных условий.</summary>
-    public required string[] Current { get; init; }
+    /// <summary>Настройки отдельного запроса текущих погодных условий.</summary>
+    public required CurrentWeatherRequestOptions Current { get; init; }
 
-    /// <summary>Список переменных для почасового прогноза.</summary>
-    public required string[] Hourly { get; init; }
+    /// <summary>Настройки отдельного запроса почасового прогноза.</summary>
+    public required ForecastWeatherRequestOptions Hourly { get; init; }
 
-    /// <summary>Список переменных для суточной сводки.</summary>
-    public required string[] Daily { get; init; }
-
-    /// <summary>Количество дней прогноза, запрашиваемых у API.</summary>
-    public int ForecastDays { get; init; } = 3;
-
-    /// <summary>Количество прошедших дней, включаемых в ответ.</summary>
-    public int PastDays { get; init; }
+    /// <summary>Настройки отдельного запроса суточной сводки.</summary>
+    public required ForecastWeatherRequestOptions Daily { get; init; }
 
     /// <summary>Часовой пояс результата; значение auto выбирает пояс координат.</summary>
     public string Timezone { get; init; } = "auto";
@@ -44,4 +38,24 @@ public sealed class OpenMeteoOptions
 
     /// <summary>Азимут поверхности для расчёта global_tilted_irradiance.</summary>
     public int Azimuth { get; init; }
+}
+
+/// <summary>Список переменных, запрашиваемых для текущих погодных условий.</summary>
+public sealed class CurrentWeatherRequestOptions
+{
+    /// <summary>Имена текущих переменных Open-Meteo.</summary>
+    public required string[] Variables { get; init; }
+}
+
+/// <summary>Список переменных и временной диапазон запроса прогноза.</summary>
+public sealed class ForecastWeatherRequestOptions
+{
+    /// <summary>Имена почасовых или суточных переменных Open-Meteo.</summary>
+    public required string[] Variables { get; init; }
+
+    /// <summary>Количество будущих дней, запрашиваемых для этого прогноза.</summary>
+    public int ForecastDays { get; init; } = 3;
+
+    /// <summary>Количество прошедших дней, включаемых в этот прогноз.</summary>
+    public int PastDays { get; init; }
 }
