@@ -17,10 +17,12 @@
 
     <ItemGroup>
       <ProjectReference Include="..\MeteoDemo.Core\MeteoDemo.Core.csproj" />
+      <ProjectReference Include="..\MeteoDemo.Data\MeteoDemo.Data.csproj" />
     </ItemGroup>
 
     <ItemGroup>
       <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.0" />
+      <PackageReference Include="Cronos" Version="0.11.1" />
     </ItemGroup>
 
     <ItemGroup>

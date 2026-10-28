@@ -7,4 +7,7 @@ internal sealed class AppConfig
 {
     /// <summary>Параметры получения погоды от Open-Meteo.</summary>
     public required OpenMeteoOptions OpenMeteo { get; init; }
+
+    /// <summary>Cron-расписания запуска запросов погоды.</summary>
+    public required WeatherScheduleOptions Schedules { get; init; }
 }

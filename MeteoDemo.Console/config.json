@@ -1,4 +1,9 @@
 {
+  "Schedules": {
+    "Current": "*/1 * * * *",
+    "Hourly": "0 * * * *",
+    "Daily": "0 0 * * *"
+  },
   "OpenMeteo": {
     "BaseUrl": "https://api.open-meteo.com/v1/forecast",
     "Latitude": 55.7558,
